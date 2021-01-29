@@ -9,7 +9,7 @@ part of mavsimPy
 """
 from state_plotter.Plotter import Plotter
 from state_plotter.plotter_args import *
-
+ 
 class dataViewer:
     def __init__(self):
         time_window_length=100
