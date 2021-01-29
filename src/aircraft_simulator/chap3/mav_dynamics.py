@@ -20,25 +20,28 @@ from message_types.msg_state import msgState
 import parameters.aerosonde_parameters as MAV
 from tools.rotations import Quaternion2Euler, Quaternion2Rotation
 
+
 class mavDynamics:
     def __init__(self, Ts):
         self.ts_simulation = Ts
         # set initial states based on parameter file
         # _state is the 13x1 internal state of the aircraft that is being propagated:
         # _state = [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r]
-        self._state = np.array([[MAV.pn0],  # (0)
-                               [MAV.pe0],   # (1)
-                               [MAV.pd0],   # (2)
-                               [MAV.u0],    # (3)
-                               [MAV.v0],    # (4)
-                               [MAV.w0],    # (5)
-                               [MAV.e0],    # (6)
-                               [MAV.e1],    # (7)
-                               [MAV.e2],    # (8)
-                               [MAV.e3],    # (9)
-                               [MAV.p0],    # (10)
-                               [MAV.q0],    # (11)
-                               [MAV.r0]])   # (12)
+        self._state = np.array([
+            [MAV.pn0],  # (0)
+            [MAV.pe0],  # (1)
+            [MAV.pd0],  # (2)
+            [MAV.u0],  # (3)
+            [MAV.v0],  # (4)
+            [MAV.w0],  # (5)
+            [MAV.e0],  # (6)
+            [MAV.e1],  # (7)
+            [MAV.e2],  # (8)
+            [MAV.e3],  # (9)
+            [MAV.p0],  # (10)
+            [MAV.q0],  # (11)
+            [MAV.r0]
+        ])  # (12)
         self.true_state = msgState()
 
     ###################################
@@ -53,21 +56,23 @@ class mavDynamics:
         # Integrate ODE using Runge-Kutta RK4 algorithm
         time_step = self.ts_simulation
         k1 = self._derivatives(self._state, forces_moments)
-        k2 = self._derivatives(self._state + time_step/2.*k1, forces_moments)
-        k3 = self._derivatives(self._state + time_step/2.*k2, forces_moments)
-        k4 = self._derivatives(self._state + time_step*k3, forces_moments)
-        self._state += time_step/6 * (k1 + 2*k2 + 2*k3 + k4)
+        k2 = self._derivatives(self._state + time_step / 2. * k1,
+                               forces_moments)
+        k3 = self._derivatives(self._state + time_step / 2. * k2,
+                               forces_moments)
+        k4 = self._derivatives(self._state + time_step * k3, forces_moments)
+        self._state += time_step / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         # normalize the quaternion
         e0 = self._state.item(6)
         e1 = self._state.item(7)
         e2 = self._state.item(8)
         e3 = self._state.item(9)
-        normE = np.sqrt(e0**2+e1**2+e2**2+e3**2)
-        self._state[6][0] = self._state.item(6)/normE
-        self._state[7][0] = self._state.item(7)/normE
-        self._state[8][0] = self._state.item(8)/normE
-        self._state[9][0] = self._state.item(9)/normE
+        normE = np.sqrt(e0**2 + e1**2 + e2**2 + e3**2)
+        self._state[6][0] = self._state.item(6) / normE
+        self._state[7][0] = self._state.item(7) / normE
+        self._state[8][0] = self._state.item(8) / normE
+        self._state[9][0] = self._state.item(9) / normE
 
         # update the message class for the true state
         self._update_true_state()
@@ -100,30 +105,43 @@ class mavDynamics:
         m = forces_moments.item(4)
         n = forces_moments.item(5)
 
+        quaternion = np.array([e0, e1, e2, e3])
+        phi, theta, psi = Quaternion2Euler(quaternion)
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        cw = np.cos(psi)
+        sw = np.sin(psi)
+        cp = np.cos(phi)
+        sp = np.sin(phi)
+
         # position kinematics
-        pn_dot =
-        pe_dot =
-        pd_dot =
+        pn_dot = ct * cw * u + (sp * st * cw - cp * sw) * v + (cp * st * cw +
+                                                               sp * sw) * w
+        pe_dot = ct * cw * u + (sp * st * cw + cp * sw) * v + (cp * st * cw -
+                                                               sp * sw) * w
+        pd_dot = -st * u + sp * ct * v + cp * ct * w
 
         # position dynamics
-        u_dot =
-        v_dot =
-        w_dot =
+        u_dot = r * v - q * w + fx / MAV.mass
+        v_dot = p * w - r * u + fy / MAV.mass
+        w_dot = q * u - p * v + fz / MAV.mass
 
         # rotational kinematics
-        e0_dot =
-        e1_dot =
-        e2_dot =
-        e3_dot =
+        e0_dot = 0.5 * (-p * e1 - q * e2 - r * e3)
+        e1_dot = 0.5 * (p * e0 + r * e2 - q * e3)
+        e2_dot = 0.5 * (q * e0 - r * e1 + p * e3)
+        e3_dot = 0.5 * (r * e0 + q * e1 - p * e2)
 
         # rotatonal dynamics
-        p_dot =
-        q_dot =
-        r_dot =
+        p_dot = MAV.gamma1 * p * q - MAV.gamma2 * q * r + MAV.gamma3 * l + MAV.gamma4 * n
+        q_dot = MAV.gamma5 * p * r - MAV.gamma6 * (p * p - r * r) + m / MAV.Jy
+        r_dot = MAV.gamma7 * p * q - MAV.gamma1 * q * r + MAV.gamma4 * l + MAV.gamma8 * n
 
         # collect the derivative of the states
-        x_dot = np.array([[pn_dot, pe_dot, pd_dot, u_dot, v_dot, w_dot,
-                           e0_dot, e1_dot, e2_dot, e3_dot, p_dot, q_dot, r_dot]]).T
+        x_dot = np.array([[
+            pn_dot, pe_dot, pd_dot, u_dot, v_dot, w_dot, e0_dot, e1_dot,
+            e2_dot, e3_dot, p_dot, q_dot, r_dot
+        ]]).T
         return x_dot
 
     def _update_true_state(self):

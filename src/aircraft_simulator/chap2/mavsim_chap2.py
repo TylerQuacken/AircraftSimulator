@@ -6,9 +6,9 @@ mavSimPy
 """
 import sys
 sys.path.append('..')
-from chap2.MavViewer import mavViewer
+from chap2.mav_viewer import mavViewer
 import parameters.simulation_parameters as SIM
-from message_types.msg_state import MsgState
+from message_types.msg_state import msgState as MsgState
 
 # initialize messages
 state = MsgState()  # instantiate state message
@@ -28,18 +28,18 @@ sim_time = SIM.start_time
 # main simulation loop
 while sim_time < SIM.end_time:
     # -------vary states to check viewer-------------
-    if sim_time < SIM.end_time/6:
-        state.theta += 0.25*SIM.ts_simulation
-    elif sim_time < 2*SIM.end_time/6:
-        state.north += 10*SIM.ts_simulation
-    elif sim_time < 3*SIM.end_time/6:
-        state.east += 10*SIM.ts_simulation
-    elif sim_time < 4*SIM.end_time/6:
-        state.altitude += 10*SIM.ts_simulation
-    elif sim_time < 5*SIM.end_time/6:
-        state.psi += 0.1*SIM.ts_simulation
+    if sim_time < SIM.end_time / 6:
+        state.north += 10 * SIM.ts_simulation
+    elif sim_time < 2 * SIM.end_time / 6:
+        state.east += 10 * SIM.ts_simulation
+    elif sim_time < 3 * SIM.end_time / 6:
+        state.theta += 0.10 * SIM.ts_simulation
+    elif sim_time < 4 * SIM.end_time / 6:
+        state.altitude += 10 * SIM.ts_simulation
+    elif sim_time < 5 * SIM.end_time / 6:
+        state.psi += 0.1 * SIM.ts_simulation
     else:
-        state.phi += 0.1*SIM.ts_simulation
+        state.phi += 0.1 * SIM.ts_simulation
 
     # -------update viewer and video-------------
     mav_view.update(state)
@@ -52,6 +52,3 @@ while sim_time < SIM.end_time:
 print("Press Ctrl-Q to exit...")
 if VIDEO is True:
     video.close()
-
-
-

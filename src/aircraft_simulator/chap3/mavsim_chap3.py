@@ -15,7 +15,6 @@ from chap2.mav_viewer import mavViewer
 from chap3.data_viewer import dataViewer
 from chap3.mav_dynamics import mavDynamics
 
-
 # initialize the visualization
 VIDEO = False  # True==write video, False==don't write video
 mav_view = mavViewer()  # initialize the mav viewer
@@ -46,13 +45,17 @@ while sim_time < SIM.end_time:
 
     # -------physical system-------------
     mav.update(forces_moments)  # propagate the MAV dynamics
+    mav.true_state.north = mav.true_state.pn
+    mav.true_state.east = mav.true_state.pe
+    mav.true_state.altitude = mav.true_state.h
 
     # -------update viewer-------------
     mav_view.update(mav.true_state)  # plot body of MAV
-    data_view.update(mav.true_state, # true states
-                     mav.true_state, # estimated states
-                     mav.true_state, # commanded states
-                     SIM.ts_simulation)
+    data_view.update(
+        mav.true_state,  # true states
+        mav.true_state,  # estimated states
+        mav.true_state,  # commanded states
+        SIM.ts_simulation)
     if VIDEO is True:
         video.update(sim_time)
 
@@ -61,7 +64,3 @@ while sim_time < SIM.end_time:
 
 if VIDEO is True:
     video.close()
-
-
-
-
