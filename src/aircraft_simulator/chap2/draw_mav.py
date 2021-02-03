@@ -85,9 +85,9 @@ class drawMav:
         db = 0.8  # body depth/2
         wb = 1.0  # body width/2
         hbeak = h * 0.4  # dist from neck to beak point
-        wbeak = 0.1  # width of beak/2
+        wbeak = 0.2  # width of beak/2
         wl = hb * 0.15  # dist to top of white belly
-        lb = 0.2  # length of beak
+        lb = 0.4  # length of beak
         lw = 3.0  # wing length from body center
         ww = 1.25  # height of wing in body center
         lf = 0.5  # length of feet

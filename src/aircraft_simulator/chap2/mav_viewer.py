@@ -10,7 +10,7 @@ import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 import pyqtgraph.Vector as Vector
-from chap2.draw_mav import drawMav as DrawMav
+from chap2.draw_mav import drawMav
 
 
 class mavViewer():
@@ -37,7 +37,7 @@ class mavViewer():
     def update(self, state):
         # initialize the drawing the first time update() is called
         if not self.plot_initialized:
-            self.mav_plot = DrawMav(state, self.window)
+            self.mav_plot = drawMav(state, self.window)
             self.plot_initialized = True
         # else update drawing on all other calls to update()
         else:

@@ -8,10 +8,10 @@ import sys
 sys.path.append('..')
 from chap2.mav_viewer import mavViewer
 import parameters.simulation_parameters as SIM
-from message_types.msg_state import msgState as MsgState
+from message_types.msg_state import msgState
 
 # initialize messages
-state = MsgState()  # instantiate state message
+state = msgState()  # instantiate state message
 
 # initialize viewers and video
 VIDEO = False  # True==write video, False==don't write video

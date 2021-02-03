@@ -12,13 +12,13 @@ import numpy as np
 import parameters.simulation_parameters as SIM
 
 from chap2.mav_viewer import mavViewer
-from chap3.data_viewer import dataViewer
+# from chap3.data_viewer import dataViewer
 from chap3.mav_dynamics import mavDynamics
 
 # initialize the visualization
 VIDEO = False  # True==write video, False==don't write video
 mav_view = mavViewer()  # initialize the mav viewer
-data_view = dataViewer()  # initialize view of data plots
+# data_view = dataViewer()  # initialize view of data plots
 if VIDEO is True:
     from chap2.video_writer import videoWriter
     video = videoWriter(video_name="chap3_video.avi",
@@ -38,7 +38,7 @@ while sim_time < SIM.end_time:
     fx = 10
     fy = 0  # 10
     fz = 0  # 10
-    Mx = 0  # 0.1
+    Mx = 0.1  # 0.1
     My = 0  # 0.1
     Mz = 0  # 0.1
     forces_moments = np.array([[fx, fy, fz, Mx, My, Mz]]).T
@@ -51,16 +51,17 @@ while sim_time < SIM.end_time:
 
     # -------update viewer-------------
     mav_view.update(mav.true_state)  # plot body of MAV
-    data_view.update(
-        mav.true_state,  # true states
-        mav.true_state,  # estimated states
-        mav.true_state,  # commanded states
-        SIM.ts_simulation)
+    # data_view.update(
+    #     mav.true_state,  # true states
+    #     mav.true_state,  # estimated states
+    #     mav.true_state,  # commanded states
+        # SIM.ts_simulation)
     if VIDEO is True:
         video.update(sim_time)
 
     #-------increment time-------------
     sim_time += SIM.ts_simulation
+    print("N: {:.2f}".format(mav.true_state.north), "\t", "E: {:.2f}".format(mav.true_state.east), "\t", "Alt: {:.2f}".format(mav.true_state.altitude), "\t", "Theta: {:.2f}".format(mav.true_state.theta), "\t", "Phi: {:.2f}".format(mav.true_state.phi), "\t", "Psi: {:.2f}".format(mav.true_state.psi))
 
 if VIDEO is True:
     video.close()

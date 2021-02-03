@@ -2,10 +2,10 @@
 mav_dynamics
     - this file implements the dynamic equations of motion for MAV
     - use unit quaternion for the attitude state
-    
+
 part of mavsimPy
     - Beard & McLain, PUP, 2012
-    - Update history:  
+    - Update history:
         12/17/2018 - RWB
         1/14/2019 - RWB
         2/24/2020 - RWB
@@ -48,7 +48,7 @@ class mavDynamics:
     # public functions
     def update(self, forces_moments):
         '''
-            Integrate the differential equations defining dynamics. 
+            Integrate the differential equations defining dynamics.
             Inputs are the forces and moments on the aircraft.
             Ts is the time step between function calls.
         '''
@@ -106,20 +106,14 @@ class mavDynamics:
         n = forces_moments.item(5)
 
         quaternion = np.array([e0, e1, e2, e3])
-        phi, theta, psi = Quaternion2Euler(quaternion)
-        ct = np.cos(theta)
-        st = np.sin(theta)
-        cw = np.cos(psi)
-        sw = np.sin(psi)
-        cp = np.cos(phi)
-        sp = np.sin(phi)
+        R = Quaternion2Rotation(quaternion)
 
         # position kinematics
-        pn_dot = ct * cw * u + (sp * st * cw - cp * sw) * v + (cp * st * cw +
-                                                               sp * sw) * w
-        pe_dot = ct * cw * u + (sp * st * cw + cp * sw) * v + (cp * st * cw -
-                                                               sp * sw) * w
-        pd_dot = -st * u + sp * ct * v + cp * ct * w
+        uvw = np.array([[u, v, w]]).T
+        p_dot = R@uvw
+        pn_dot = p_dot[0][0]
+        pe_dot = p_dot[1][0]
+        pd_dot = p_dot[2][0]
 
         # position dynamics
         u_dot = r * v - q * w + fx / MAV.mass
