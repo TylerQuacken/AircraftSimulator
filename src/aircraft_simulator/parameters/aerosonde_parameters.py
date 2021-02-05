@@ -95,11 +95,10 @@ C_n_delta_r = -0.069
 D_prop = 20 * (0.0254)     # prop diameter in m
 
 # Motor parameters
-KV = 145.                   # from datasheet RPM/V
+KV = 60. / (145. * 2. * np.pi)                   # from datasheet RPM/V
 KQ = (1. / KV) * 60. / (2. * np.pi)  # KQ in N-m/A, V-s/rad
 R_motor = 0.042              # ohms
 i0 = 1.5                     # no-load (zero-torque) current (A)
-
 
 # Inputs
 ncells = 12.
