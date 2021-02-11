@@ -242,7 +242,7 @@ class MavDynamics:
         Mz = scalar*MAV.b * (MAV.C_n_0 + MAV.C_n_beta*self._beta + MAV.C_n_p*b2Va*p + MAV.C_n_r*b2Va*r + MAV.C_n_delta_a*delta_a + MAV.C_n_delta_r*delta_r)
 
         
-        print(thrust_prop, "\t", fx)
+        # print(thrust_prop, "\t", fx)
         # from IPython import embed; embed()
         
         self._forces[0] = fx
@@ -257,7 +257,7 @@ class MavDynamics:
 
         # Angular speed of propeller
         a = MAV.rho*MAV.C_Q0*MAV.D_prop**5 / (4*(np.pi**2))
-        b = MAV.rho*MAV.C_Q1*Va*MAV.D_prop**4 / (2*np.pi) + MAV.KQ*MAV.KV/MAV.R_motor
+        b = MAV.rho*MAV.C_Q1*Va*MAV.D_prop**4 / (2*np.pi) + MAV.KQ**2/MAV.R_motor
         c = MAV.rho*MAV.C_Q2*Va**2*MAV.D_prop**3 - MAV.KQ*V_in/MAV.R_motor + MAV.KQ*MAV.i0
         Omega_p = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
 

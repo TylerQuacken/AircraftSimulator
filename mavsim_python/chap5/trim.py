@@ -20,10 +20,10 @@ def compute_trim(mav, Va, gamma):
                        [Va],  # u
                        [0.],  # v
                        [0.],  # w
-                       [e0[0]],  # e0
-                       [e0[1]],  # e1
-                       [e0[2]],  # e2
-                       [e0[3]],  # e3
+                       [e0.item(0)],  # e0
+                       [e0.item(1)],  # e1
+                       [e0.item(2)],  # e2
+                       [e0.item(3)],  # e3
                        [0.],  # p
                        [0.],  # q
                        [0.]])  # r
@@ -69,17 +69,36 @@ def compute_trim(mav, Va, gamma):
 
 
 def trim_objective_fun(x, mav, Va, gamma):
-    state = x[:13]
-    delta = MsgDelta(x[13], x[14], x[15], x[16])
-    mav._state = state.reshape([13,1])
+    # state = x[:13]
+    # delta = MsgDelta(x[13], x[14], x[15], x[16])
+    # mav.external_set_state(state.reshape([13,1]))
+    # mav._update_velocity_data()
+    # forces_moments = mav._forces_moments(delta)
+    # xDot = mav._derivatives(state, forces_moments)
+
+    # xDotStar = np.zeros([13])
+    # xDotStar[2] = Va*np.sin(gamma)
+
+    # error = xDot.flatten() - xDotStar.flatten()
+    # # objective function to be minimized
+    # J = np.linalg.norm(error[2:]) ** 2
+    
+    # xdot_star
+    xdot_star = np.array([0, 0, Va * np.sin(gamma), 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    # extract x from X
+    # scipy gives 1d vector, slice out top two of x that I don't care about
+    state = x[:13]  # extract deltas from X
+    deltas = MsgDelta(x[13], x[14], x[15], x[16])
+
+    mav.external_set_state(state.reshape(-1, 1))
+    print(state)
     mav._update_velocity_data()
-    forces_moments = mav._forces_moments(delta)
-    xDot = mav._derivatives(state, forces_moments)
-
-    xDotStar = np.zeros([13])
-    xDotStar[2] = Va*np.sin(gamma)
-
-    error = xDot.flatten() - xDotStar.flatten()
+    # get xdot from mav
+    u = mav._forces_moments(deltas)
+    xdot = mav._derivatives(state, u)
+    # calc err
+    err = xdot_star[2:] - xdot[2:]
+    err = err.reshape(-1, 1)
     # objective function to be minimized
-    J = np.dot(error[2:], error[2:])
+    J = np.linalg.norm(err) ** 2
     return J

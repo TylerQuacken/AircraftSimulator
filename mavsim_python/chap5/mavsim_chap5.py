@@ -28,7 +28,7 @@ if VIDEO is True:
                         output_rate=SIM.ts_video)
 
 # initialize elements of the architecture
-wind = WindSimulation(SIM.ts_simulation)
+# wind = WindSimulation(SIM.ts_simulation)
 mav = MavDynamics(SIM.ts_simulation)
 
 # use compute_trim function to compute trim state and trim input
@@ -41,7 +41,7 @@ delta = trim_input  # set input to constant constant trim input
 print(trim_input)
 
 # compute the state space model linearized about trim
-compute_model(mav, trim_state, trim_input)
+# compute_model(mav, trim_state, trim_input)
 
 # this signal will be used to excite modes
 input_signal = Signals(amplitude=.05,
