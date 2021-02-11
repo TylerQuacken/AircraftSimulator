@@ -71,12 +71,15 @@ def compute_trim(mav, Va, gamma):
 def trim_objective_fun(x, mav, Va, gamma):
     state = x[:13]
     delta = MsgDelta(x[13], x[14], x[15], x[16])
+    mav._state = state.reshape([13,1])
+    mav._update_velocity_data()
     forces_moments = mav._forces_moments(delta)
     xDot = mav._derivatives(state, forces_moments)
 
     xDotStar = np.zeros([13])
     xDotStar[2] = Va*np.sin(gamma)
-    
+
+    error = xDot.flatten() - xDotStar.flatten()
     # objective function to be minimized
-    J = np.sum(xDot[2:] * xDotStar[2:])
+    J = np.dot(error[2:], error[2:])
     return J

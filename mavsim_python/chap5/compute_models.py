@@ -16,6 +16,7 @@ from message_types.msg_delta import MsgDelta
 
 def compute_model(mav, trim_state, trim_input):
     A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input)
+    from IPython import embed; embed()
     Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, \
     a_V1, a_V2, a_V3 = compute_tf_model(mav, trim_state, trim_input)
 
@@ -92,74 +93,135 @@ def compute_tf_model(mav, trim_state, trim_input):
     alpha_trim = mav._alpha
     phi, theta_trim, psi = Quaternion2Euler(trim_state[6:10])
 
-    # define transfer function constants
-    a_phi1 = 
-    a_phi2 = 
-    a_theta1 = 
-    a_theta2 = 
-    a_theta3 = 
+    # # define transfer function constants
+    # a_phi1 = 
+    # a_phi2 = 
+    # a_theta1 = 
+    # a_theta2 = 
+    # a_theta3 = 
 
-    # Compute transfer function coefficients using new propulsion model
-    a_V1 = 
-    a_V2 = 
-    a_V3 = 
+    # # Compute transfer function coefficients using new propulsion model
+    # a_V1 = 
+    # a_V2 = 
+    # a_V3 = 
 
-    return Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, a_V1, a_V2, a_V3
+    # return Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, a_V1, a_V2, a_V3
 
 
 def compute_ss_model(mav, trim_state, trim_input):
     x_euler = euler_state(trim_state)
-    A = 
-    B = 
+    A = df_dx(mav, x_euler, trim_input)
+    B = df_du(mav, x_euler, trim_input)
     # extract longitudinal states (u, w, q, theta, pd) and change pd to h
-    A_lon = 
-    B_lon =
+    lon_mask = np.array([3, 5, 10, 7, 2])
+    lon_mask2 = np.array([0, 3])
+    A_lon = A[lon_mask, :][:, lon_mask]
+    B_lon = B[lon_mask, :][:, lon_mask2]
     # extract lateral states (v, p, r, phi, psi)
-    A_lat =
-    B_lat =
+    lat_mask = np.array([4, 9, 11, 6, 8])
+    lat_mask2 = np.array([1, 2])
+    A_lat = A[lat_mask, :][:, lat_mask]
+    B_lat = B[lat_mask, :][:, lat_mask2]
     return A_lon, B_lon, A_lat, B_lat
 
 def euler_state(x_quat):
     # convert state x with attitude represented by quaternion
     # to x_euler with attitude represented by Euler angles
-    x_euler = 
+    e = x_quat[6:10]
+    phi, theta, psi = Quaternion2Euler(e)
+    x_euler = np.zeros([12,1])
+    x_euler[:6,:] = x_quat[:6,:]
+    x_euler[6,:] = phi
+    x_euler[7,:] = theta
+    x_euler[8,:] = psi
+    x_euler[9:,:] = x_quat[10:,:]
     return x_euler
 
 def quaternion_state(x_euler):
     # convert state x_euler with attitude represented by Euler angles
     # to x_quat with attitude represented by quaternions
-    x_quat = 
+    quat = Euler2Quaternion(x_euler[6], x_euler[7], x_euler[8])
+    x_quat = np.zeros([13,1])
+    x_quat[:6,:] = x_euler[:6,:]
+    x_quat[6:10,0] = quat.flatten()
+    x_quat[10:,:] = x_euler[9:,:]
     return x_quat
 
 def f_euler(mav, x_euler, delta):
     # return 12x1 dynamics (as if state were Euler state)
     # compute f at euler_state
+    x_quat = quaternion_state(x_euler)
+    mav._state = x_quat.reshape([13,1])
+    mav._update_velocity_data()
+    forces_moments = mav._forces_moments(delta)
+    xDot = mav._derivatives(x_quat, forces_moments)
+    de_dt = xDot[6:10,:]
+    quat = x_quat[6:10,:]
+    dE_de = np.zeros([3,4])
+
+    perturb = 0.001
     
-    f_euler_ = 
+    for i in range(4):
+        de = np.zeros([4,1])
+        de[i,:] = perturb
+        de /= np.sum(de)
+        E_p = np.array(Quaternion2Euler(quat + de))
+        E = np.array(Quaternion2Euler(quat))
+        dE_de[:,i] = (E_p - E) / perturb
+
+    dE_dt = dE_de @ de_dt
+
+    f_euler_ = np.zeros([12,1])
+    f_euler_[:6,:] = xDot[:6,:]
+    f_euler_[6:9,:] = dE_dt
+    f_euler_[9:,:] = xDot[10:,:]
+    
     return f_euler_
 
 def df_dx(mav, x_euler, delta):
     # take partial of f_euler with respect to x_euler
-    A = 
+    A = np.zeros([12,12])
+    perturb = 0.001
+    for i in range(12):
+        dx = np.zeros([12,1])
+        dx[i,:] = perturb
+        f = f_euler(mav, x_euler, delta)
+        f_p = f_euler(mav, x_euler + dx, delta)
+        dfx = (f_p - f)/perturb
+        A[:,i] = dfx.flatten()
+    
     return A
 
 
 def df_du(mav, x_euler, delta):
     # take partial of f_euler with respect to input
-    B = 
+    
+    B = np.zeros([12,4])
+    perturb = 0.001
+    for i in range(4):
+        ddelta = np.zeros([4,1])
+        ddelta[i,:] = perturb
+        delta_p_array = delta.to_array() + ddelta
+        delta_p = MsgDelta()
+        delta_p.from_array(delta_p_array)
+        f = f_euler(mav, x_euler, delta)
+        f_p = f_euler(mav, x_euler, delta_p)
+        dfx = (f_p - f)/perturb
+        B[:,i] = dfx.flatten()
+        
     return B
 
 
-def dT_dVa(mav, Va, delta_t):
-    # returns the derivative of motor thrust with respect to Va
-    eps = 
-    T_eps, Q_eps = #mav._motor_thrust_torque()
-    T, Q = #mav._motor_thrust_torque()
-    return (T_eps - T) / eps
+# def dT_dVa(mav, Va, delta_t):
+#     # returns the derivative of motor thrust with respect to Va
+#     eps = 
+#     T_eps, Q_eps = #mav._motor_thrust_torque()
+#     T, Q = #mav._motor_thrust_torque()
+#     return (T_eps - T) / eps
 
-def dT_ddelta_t(mav, Va, delta_t):
-    # returns the derivative of motor thrust with respect to delta_t
-    eps = 
-    T_eps, Q_eps = #mav._motor_thrust_torque()
-    T, Q = #mav._motor_thrust_torque()
-    return (T_eps - T) / eps
+# def dT_ddelta_t(mav, Va, delta_t):
+#     # returns the derivative of motor thrust with respect to delta_t
+#     eps = 
+#     T_eps, Q_eps = #mav._motor_thrust_torque()
+#     T, Q = #mav._motor_thrust_torque()
+#     return (T_eps - T) / eps
