@@ -14,21 +14,21 @@ from message_types.msg_delta import MsgDelta
 def compute_trim(mav, Va, gamma):
     # define initial state and input
     e0 = Euler2Quaternion(0., gamma, 0.)
-    state0 = np.array([[],  # pn
-                   [],  # pe
-                   [],  # pd
-                   [],  # u
-                   [],  # v
-                   [],  # w
-                   [],  # e0
-                   [],  # e1
-                   [],  # e2
-                   [],  # e3
-                   [],  # p
-                   [],  # q
-                   []   # r
-                   ])
-    delta0 = #MsgDelta()
+    state0 = np.array([[0.],  # pn
+                       [0.],  # pe
+                       [0.],  # pd
+                       [Va],  # u
+                       [0.],  # v
+                       [0.],  # w
+                       [e0[0]],  # e0
+                       [e0[1]],  # e1
+                       [e0[2]],  # e2
+                       [e0[3]],  # e3
+                       [0.],  # p
+                       [0.],  # q
+                       [0.]])  # r
+
+    delta0 = MsgDelta()
     x0 = np.concatenate((state0, delta0.to_array()), axis=0)
     # define equality constraints
     cons = ({'type': 'eq',
@@ -69,6 +69,14 @@ def compute_trim(mav, Va, gamma):
 
 
 def trim_objective_fun(x, mav, Va, gamma):
+    state = x[:13]
+    delta = MsgDelta(x[13], x[14], x[15], x[16])
+    forces_moments = mav._forces_moments(delta)
+    xDot = mav._derivatives(state, forces_moments)
+
+    xDotStar = np.zeros([13])
+    xDotStar[2] = Va*np.sin(gamma)
+    
     # objective function to be minimized
-    J = 
+    J = np.sum(xDot[2:] * xDotStar[2:])
     return J
