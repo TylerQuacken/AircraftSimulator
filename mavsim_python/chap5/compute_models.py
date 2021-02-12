@@ -16,10 +16,10 @@ from message_types.msg_delta import MsgDelta
 
 def compute_model(mav, trim_state, trim_input):
     A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input)
-    breakpoint()
     Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, \
         a_V1, a_V2, a_V3 = compute_tf_model(mav, trim_state, trim_input)
 
+    # from IPython import embed; embed()
     # write transfer function gains to file
     file = open('model_coef.py', 'w')
     file.write('import numpy as np\n')
@@ -111,7 +111,7 @@ def compute_tf_model(mav, trim_state, trim_input):
     phi, theta_trim, psi = Quaternion2Euler(trim_state[6:10])
 
     # define transfer function constants
-    a_phi1 = 0.5*MAV.rho*Va_trim**2 * MAV.S_wing * MAV.b **2 * MAV.C_p_p / (2*Va_trim)
+    a_phi1 = -0.5*MAV.rho*Va_trim**2 * MAV.S_wing * MAV.b **2 * MAV.C_p_p / (2*Va_trim)
     a_phi2 = 0.5*MAV.rho*Va_trim**2 * MAV.S_wing * MAV.b * MAV.C_p_delta_a
     const = 0.5*MAV.rho*Va_trim**2*MAV.c*MAV.S_wing/MAV.Jy
     a_theta1 = -const * MAV.C_m_q *MAV.c /(2.*Va_trim)
@@ -119,8 +119,8 @@ def compute_tf_model(mav, trim_state, trim_input):
     a_theta3 = const * MAV.C_m_delta_e
 
     # Compute transfer function coefficients using new propulsion model
-    a_V1 = MAV.rho * Va_trim * MAV.S_prop / MAV.mass * (MAV.C_D_0 + MAV.C_D_alpha*alpha_trim + MAV.C_D_delta_e * trim_input.elevator) - dT_dVa(mav, trim_input.throttle, Va_trim) / MAV.mass
-    a_V2 = dT_ddelta_t(mav, trim_input.throttle, Va_trim) / MAV.mass
+    a_V1 = (MAV.rho * Va_trim * MAV.S_prop / MAV.mass) * (MAV.C_D_0 + MAV.C_D_alpha*alpha_trim + MAV.C_D_delta_e * trim_input.elevator) - dT_dVa(mav, Va_trim, trim_input.throttle) / MAV.mass
+    a_V2 = dT_ddelta_t(mav, Va_trim, trim_input.throttle) / MAV.mass
     a_V3 = MAV.gravity * np.cos(theta_trim - alpha_trim)
 
     return Va_trim, alpha_trim, theta_trim, a_phi1, a_phi2, a_theta1, a_theta2, a_theta3, a_V1, a_V2, a_V3
@@ -186,7 +186,7 @@ def f_euler(mav, x_euler, delta):
         de = np.zeros([4, 1])
         de[i, :] = perturb
         quat_p = quat + de
-        quat_p /= np.sum(quat_p)
+        quat_p /= np.linalg.norm(quat_p)
         E_p = np.array(Quaternion2Euler(quat_p))
         E = np.array(Quaternion2Euler(quat))
         dE_de[:, i] = (E_p - E) / perturb
