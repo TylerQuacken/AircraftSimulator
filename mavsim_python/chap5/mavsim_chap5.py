@@ -33,20 +33,18 @@ mav = MavDynamics(SIM.ts_simulation)
 
 # use compute_trim function to compute trim state and trim input
 Va = 25.
-gamma = 0.*np.pi/180.
+gamma = 0. * np.pi / 180.
 trim_state, trim_input = compute_trim(mav, Va, gamma)
 mav._state = trim_state  # set the initial state of the mav to the trim state
-mav._state[2,0] = -100.0
+mav._state[2, 0] = -100.0
 delta = trim_input  # set input to constant constant trim input
 print(trim_input)
 
 # compute the state space model linearized about trim
-# compute_model(mav, trim_state, trim_input)
+compute_model(mav, trim_state, trim_input)
 
 # this signal will be used to excite modes
-input_signal = Signals(amplitude=.05,
-                       duration=0.01,
-                       start_time=2.0)
+input_signal = Signals(amplitude=.05, duration=0.01, start_time=2.0)
 
 # initialize the simulation time
 sim_time = SIM.start_time
@@ -64,11 +62,12 @@ while sim_time < SIM.end_time:
 
     # -------update viewer-------------
     mav_view.update(mav.true_state)  # plot body of MAV
-    # data_view.update(mav.true_state,  # true states
-    #                  mav.true_state,  # estimated states
-    #                  mav.true_state,  # commanded states
-    #                  delta,  # input to aircraft
-    #                  SIM.ts_simulation)
+    # data_view.update(
+    #     mav.true_state,  # true states
+    #     mav.true_state,  # estimated states
+    #     mav.true_state,  # commanded states
+    #     delta,  # input to aircraft
+    #     SIM.ts_simulation)
     if VIDEO is True:
         video.update(sim_time)
 
@@ -77,7 +76,3 @@ while sim_time < SIM.end_time:
 
 if VIDEO is True:
     video.close()
-
-
-
-
