@@ -71,11 +71,12 @@ while sim_time < SIM.end_time:
 
     # -------update viewer-------------
     mav_view.update(mav.true_state)  # plot body of MAV
-    data_view.update(mav.true_state,  # true states
-                     estimated_state,  # estimated states
-                     commanded_state,  # commanded states
-                     delta,  # input to aircraft
-                     SIM.ts_simulation)
+    data_view.update(
+        mav.true_state,  # true states
+        estimated_state,  # estimated states
+        commanded_state,  # commanded states
+        delta,  # input to aircraft
+        SIM.ts_simulation)
     if VIDEO is True:
         video.update(sim_time)
 
@@ -84,7 +85,3 @@ while sim_time < SIM.end_time:
 
 if VIDEO is True:
     video.close()
-
-
-
-

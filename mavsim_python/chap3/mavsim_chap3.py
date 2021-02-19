@@ -10,16 +10,15 @@ sys.path.append('..')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
-
 from chap2.mav_viewer import MavViewer
-# from chap3.data_viewer import DataViewer
+from chap3.data_viewer import DataViewer
 from chap3.mav_dynamics import MavDynamics
 from message_types.msg_delta import MsgDelta
 
 # initialize the visualization
 VIDEO = False  # True==write video, False==don't write video
 mav_view = MavViewer()  # initialize the mav viewer
-# data_view = DataViewer()  # initialize view of data plots
+data_view = DataViewer()  # initialize view of data plots
 if VIDEO is True:
     from chap2.video_writer import VideoWriter
     video = VideoWriter(video_name="chap3_video.avi",
@@ -50,11 +49,12 @@ while sim_time < SIM.end_time:
 
     # -------update viewer-------------
     mav_view.update(mav.true_state)  # plot body of MAV
-    # data_view.update(mav.true_state,  # true states
-    #                  mav.true_state,  # estimated states
-    #                  mav.true_state,  # commanded states
-    #                  delta,  # inputs to the aircraft
-    #                  SIM.ts_simulation)
+    data_view.update(
+        mav.true_state,  # true states
+        mav.true_state,  # estimated states
+        mav.true_state,  # commanded states
+        delta,  # inputs to the aircraft
+        SIM.ts_simulation)
     if VIDEO is True:
         video.update(sim_time)
 
