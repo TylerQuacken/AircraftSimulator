@@ -41,7 +41,7 @@ commands = MsgAutopilot()
 Va_command = Signals(dc_offset=25.0,
                      amplitude=3.0,
                      start_time=2.0,
-                     frequency = 0.01)
+                     frequency=0.01)
 h_command = Signals(dc_offset=100.0,
                     amplitude=10.0,
                     start_time=0.0,
@@ -65,7 +65,8 @@ while sim_time < SIM.end_time:
 
     # -------autopilot-------------
     measurements = mav.sensors()  # get sensor measurements
-    estimated_state = observer.update(measurements)  # estimate states from measurements
+    estimated_state = observer.update(
+        measurements)  # estimate states from measurements
     delta, commanded_state = autopilot.update(commands, estimated_state)
 
     # -------physical system-------------
@@ -74,11 +75,12 @@ while sim_time < SIM.end_time:
 
     # -------update viewer-------------
     mav_view.update(mav.true_state)  # plot body of MAV
-    data_view.update(mav.true_state,  # true states
-                     estimated_state,  # estimated states
-                     commanded_state,  # commanded states
-                     delta,  # input to aircraft
-                     SIM.ts_simulation)
+    data_view.update(
+        mav.true_state,  # true states
+        estimated_state,  # estimated states
+        commanded_state,  # commanded states
+        delta,  # input to aircraft
+        SIM.ts_simulation)
     if VIDEO is True:
         video.update(sim_time)
 
@@ -87,7 +89,3 @@ while sim_time < SIM.end_time:
 
 if VIDEO is True:
     video.close()
-
-
-
-

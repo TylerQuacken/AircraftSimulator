@@ -37,13 +37,13 @@ class Observer:
     def update(self, measurement):
 
         # estimates for p, q, r are low pass filter of gyro minus bias estimate
-        self.estimated_state.p = 
-        self.estimated_state.q = 
-        self.estimated_state.r = 
+        self.estimated_state.p = self.lpf_gyro_x(measurement.gyro_x - SENSOR.gyro_x_bias)
+        self.estimated_state.q = self.lpf_gyro_y(measurement.gyro_y - SENSOR.gyro_y_bias)
+        self.estimated_state.r = self.lpf_gyro_z(measurement.gyro_y - SENSOR.gyro_z_bias)
 
         # invert sensor model to get altitude and airspeed
-        self.estimated_state.altitude = 
-        self.estimated_state.Va = 
+        self.estimated_state.altitude = self.lpf_abs(measurement.abs_pressure)/(CTRL.rho * CTRL.gravity)
+        self.estimated_state.Va = np.sqrt(2*self.lpf_diff(measurement.diff_pressure)/CTRL.rho)
 
         # estimate phi and theta with simple ekf
         self.attitude_ekf.update(measurement, self.estimated_state)
@@ -68,21 +68,22 @@ class AlphaFilter:
         self.y = y0  # initial condition
 
     def update(self, u):
-        self.y = 
+        self.y = self.alpha * self.y + (1-self.alpha)*u
         return self.y
 
 
 class EkfAttitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q = 
-        self.Q_gyro =
-        self.R_accel = 
-        self.N =   # number of prediction step per sample
+        ksi = np.array([SENSOR.
+        self.Q = 1e-6 * np.diag([1.0,1.0])
+        self.Q_gyro = SENSOR.gyro_sigma**2 * np.diag([1.0,1.0,1.0])
+        self.R_accel = SENSOR.accel_sigma**2 * np.diag([1.0, 1.0, 1.0])
+        self.N = 2  # number of prediction step per sample
         self.xhat =  # initial state: phi, theta
-        self.P = 
-        self.Ts = 
-        self.gate_threshold = #stats.chi2.isf()
+        self.P = np.diag([1.0,1.0])
+        self.Ts = SIM.ts_control/self.N
+        self.gate_threshold = stats.chi2.isf()
 
     def update(self, measurement, state):
         self.propagate_model(measurement, state)
