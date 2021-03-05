@@ -153,7 +153,7 @@ class MavDynamics:
         self._sensors.mag_z = mag_body[0] + np.random.normal(
             SENSOR.mag_beta, SENSOR.mag_sigma)
         # simulate pressure sensors
-        self._sensors.abs_pressure = MAV.rho * MAV.gravity * self._state.item(
+        self._sensors.abs_pressure = MAV.rho * MAV.gravity * -self._state.item(
             2) + np.random.normal(0, SENSOR.abs_pres_sigma)
         self._sensors.diff_pressure = MAV.rho * self._Va**2 / 2 + np.random.normal(
             0.0, SENSOR.diff_pres_sigma)
