@@ -32,7 +32,7 @@ if VIDEO is True:
 wind = WindSimulation(SIM.ts_simulation)
 mav = MavDynamics(SIM.ts_simulation)
 autopilot = Autopilot(SIM.ts_simulation)
-observer = Observer(SIM.ts_simulation)
+observer = Observer(SIM.ts_simulation, mav.true_state)
 path_follower = PathFollower()
 
 # path definition
@@ -43,7 +43,8 @@ path.type = 'orbit'
 if path.type == 'line':
     path.line_origin = np.array([[0.0, 0.0, -100.0]]).T
     path.line_direction = np.array([[0.5, 1.0, 0.0]]).T
-    path.line_direction = path.line_direction / np.linalg.norm(path.line_direction)
+    path.line_direction = path.line_direction / np.linalg.norm(
+        path.line_direction)
 elif path.type == 'orbit':
     path.orbit_center = np.array([[0.0, 0.0, -100.0]]).T  # center of the orbit
     path.orbit_radius = 300.0  # radius of the orbit
@@ -58,14 +59,16 @@ print("Press Command-Q to exit...")
 while sim_time < SIM.end_time:
     # -------observer-------------
     measurements = mav.sensors()  # get sensor measurements
-    estimated_state = observer.update(measurements)  # estimate states from measurements
+    estimated_state = observer.update(
+        measurements)  # estimate states from measurements
 
     # -------path follower-------------
     autopilot_commands = path_follower.update(path, estimated_state)
     #autopilot_commands = path_follower.update(path, mav.true_state)  # for debugging
 
     # -------autopilot-------------
-    delta, commanded_state = autopilot.update(autopilot_commands, estimated_state)
+    delta, commanded_state = autopilot.update(autopilot_commands,
+                                              estimated_state)
 
     # -------physical system-------------
     current_wind = wind.update()  # get the new wind vector
@@ -74,11 +77,12 @@ while sim_time < SIM.end_time:
     # -------update viewer-------------
     if plot_timer > SIM.ts_plotting:
         path_view.update(mav.true_state, path)  # plot path and MAV
-        data_view.update(mav.true_state,  # true states
-                         estimated_state,  # estimated states
-                         commanded_state,  # commanded states
-                         delta,  # input to aircraft
-                         SIM.ts_simulation)
+        data_view.update(
+            mav.true_state,  # true states
+            estimated_state,  # estimated states
+            commanded_state,  # commanded states
+            delta,  # input to aircraft
+            SIM.ts_simulation)
         plot_timer = 0
     plot_timer += SIM.ts_simulation
 
@@ -90,7 +94,3 @@ while sim_time < SIM.end_time:
 
 if VIDEO is True:
     video.close()
-
-
-
-
