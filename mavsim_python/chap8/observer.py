@@ -17,9 +17,9 @@ from IPython import embed
 
 
 class Observer:
-    def __init__(self, ts_control):
+    def __init__(self, ts_control, initial_state):
         # initialized estimated state message
-        self.estimated_state = MsgState()
+        self.estimated_state = initial_state
         # use alpha filters to low pass filter gyros and accels
         self.lpf_gyro_x = AlphaFilter(alpha=0.5)
         self.lpf_gyro_y = AlphaFilter(alpha=0.5)
@@ -180,7 +180,7 @@ class EkfPosition:
         self.R_pseudo = np.diag([0.000001, 0.000001])
         self.N = 10  # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
-        self.xhat = np.array([0.0, 0.0, 25.0, 0.0, 0.0, 0.0, 0.0]).T
+        self.xhat = np.array([[0.0, 0.0, 25.0, 0.0, 0.0, 0.0, 0.0]]).T
         self.P = np.diag([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         self.gps_n_old = 9999
         self.gps_e_old = 9999
@@ -188,7 +188,6 @@ class EkfPosition:
         self.gps_course_old = 9999
         self.pseudo_threshold = stats.chi2.isf(q=0.01, df=2)
         self.gps_threshold = 100000  # don't gate GPS
-        print("Init")
 
     def update(self, measurement, state):
         self.propagate_model(measurement, state)
@@ -267,7 +266,6 @@ class EkfPosition:
             temp = (np.eye(7) - L @ C)
             self.P = temp @ self.P @ temp.T + L @ self.R_pseudo @ L.T
             self.xhat = self.xhat + L @ (y - h)
-            print("I dunnit")
 
         # only update GPS when one of the signals changes
         if ((measurement.gps_n != self.gps_n_old)
