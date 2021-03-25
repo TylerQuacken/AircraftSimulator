@@ -50,7 +50,7 @@ class Autopilot:
     def update(self, cmd, state):
 
         # lateral autopilot
-        chi_c = wrap(cmd.course_command, 0.0)
+        chi_c = wrap(cmd.course_command, state.chi)
         phi_c = cmd.phi_feedforward + self.course_from_roll.update(
             chi_c, state.chi)
         phi_c = self.saturate(phi_c, -np.radians(30), np.radians(30))
