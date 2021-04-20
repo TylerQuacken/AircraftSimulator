@@ -56,6 +56,39 @@ class PathManager:
             if self.ptr_current == 0:
                 self.manager_requests_waypoints = True
 
+    def fillet_manager(self, waypoints, radius, state):
+        mav_pos = np.array([[state.north, state.east, -state.altitude]]).T
+        # if the waypoints have changed, update the waypoint pointer
+        if waypoints.flag_waypoints_changed is True:
+            # waypoints.flag_manager_requests_waypoints = False
+            waypoints.flag_waypoints_changed = False
+            self.num_waypoints = waypoints.num_waypoints
+            self.initialize_pointers()
+            self.construct_fillet_line(waypoints, radius)
+            self.manager_state = 1
+
+        # state machine for fillet path
+        if self.manager_state == 1:
+            # follow straight line path from previous to current
+            if self.inHalfSpace(mav_pos):
+                # entered into H1
+                self.construct_fillet_circle(waypoints, radius)
+                self.manager_state = 3
+        elif self.manager_state == 2:
+            # follow orbit until out of H2
+            if not self.inHalfSpace(mav_pos):
+                self.manager_state = 3
+        elif self.manager_state == 3:
+            # follow orbit from previous->current to current->next
+            if self.inHalfSpace(mav_pos):
+                # entered into half plane H2
+                self.increment_pointers()
+                self.construct_fillet_line(waypoints, radius)
+                self.manager_state = 1
+                # requests new waypoints
+                if self.ptr_current == 0:
+                    self.manager_requests_waypoints = True
+
     def initialize_pointers(self):
         if self.num_waypoints >= 3:
             self.ptr_previous = 0
@@ -68,11 +101,14 @@ class PathManager:
         self.ptr_previous = self.ptr_current
         self.ptr_current = self.ptr_next
         # make next or current 9999 if invalid
-        self.ptr_next = self.ptr_next + 1
-        if self.ptr_next > self.num_waypoints - 1:
-            self.ptr_next = 9999
-        if self.ptr_current > self.num_waypoints - 1:
-            self.ptr_current = 9999
+        self.ptr_next = (self.ptr_next + 1) % self.num_waypoints
+        print("Prev: {}\tCurrent: {}\tNext: {}".format(self.ptr_previous,
+                                                       self.ptr_current,
+                                                       self.ptr_next))
+        # if self.ptr_next > self.num_waypoints - 1:
+        #     self.ptr_next = 9999
+        # if self.ptr_current > self.num_waypoints - 1:
+        #     self.ptr_current = 9999
 
     def inHalfSpace(self, pos):
         if (pos - self.halfspace_r).T @ self.halfspace_n >= 0:
@@ -93,7 +129,7 @@ class PathManager:
             next = previous + 200 * self.path.line_direction
         else:
             next = waypoints.ned[:, self.ptr_next].reshape(-1, 1)
-        #update path variables
+        # update path variables
         self.path.type = 'line'
         self.path.airspeed = waypoints.airspeed.item(self.ptr_current)
         self.path.line_origin = previous
@@ -107,39 +143,6 @@ class PathManager:
         self.halfspace_n /= np.linalg.norm(self.halfspace_n)
         self.halfspace_r = current
         self.path.plot_updated = False
-
-    def fillet_manager(self, waypoints, radius, state):
-        mav_pos = np.array([[state.north, state.east, -state.altitude]]).T
-        # if the waypoints have changed, update the waypoint pointer
-        if waypoints.flag_waypoints_changed is True:
-            # waypoints.flag_manager_requests_waypoints = False
-            waypoints.flag_waypoints_changed = False
-            self.num_waypoints = waypoints.num_waypoints
-            self.initialize_pointers()
-            self.construct_fillet_line(waypoints, radius)
-            self.manager_state = 1
-
-        # state machine for fillet path
-        if self.manager_state == 1:
-            # follow straight line path from previous to current
-            if self.inHalfSpace(mav_pos):
-                # entered into H1
-                self.construct_fillet_circle(waypoints, radius)
-                self.manager_state == 3
-        elif self.manager_state == 2:
-            # follow orbit until out of H2
-            if not self.inHalfSpace(mav_pos):
-                self.manager_state = 3
-        elif self.manager_state == 3:
-            # follow orbit from previous->current to current->next
-            if self.inHalfSpace(mav_pos):
-                # entered into half plane H2
-                self.increment_pointers()
-                self.construct_fillet_line(waypoints, radius)
-                self.manager_state = 1
-                # requests new waypoints
-                if self.ptr_current == 0:
-                    self.manager_requests_waypoints = True
 
     def construct_fillet_line(self, waypoints, radius):
         previous = waypoints.ned[:, self.ptr_previous:self.ptr_previous + 1]
@@ -190,7 +193,8 @@ class PathManager:
         # set orbit_center
         qC = qPrev - qNext
         qC /= np.linalg.norm(qC)
-        self.path.orbit_center = current - (radius / np.sin(varphi / 2)) * qC
+        self.path.orbit_center = current - (radius /
+                                            (np.sin(varphi / 2) + 0.001)) * qC
         self.path.orbit_radius = radius
         # set orbit direction as CW (lam=1) or CCW (lam=2)
         if np.sign(
@@ -201,7 +205,8 @@ class PathManager:
             self.path.orbit_direction = 'CCW'
 
         self.halfspace_n = qNext
-        self.halfspace_r = current + (radius / np.tan(varphi / 2)) * qNext
+        self.halfspace_r = current + (radius /
+                                      (np.tan(varphi / 2) + 0.001)) * qNext
         self.path.plot_updated = False
 
     # def dubins_manager(self, waypoints, radius, state):

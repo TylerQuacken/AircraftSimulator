@@ -64,7 +64,7 @@ while sim_time < SIM.end_time:
 
     # -------path follower-------------
     autopilot_commands = path_follower.update(path, estimated_state)
-    #autopilot_commands = path_follower.update(path, mav.true_state)  # for debugging
+    # autopilot_commands = path_follower.update(path, mav.true_state)  # for debugging
 
     # -------autopilot-------------
     delta, commanded_state = autopilot.update(autopilot_commands,
